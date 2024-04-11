@@ -1,13 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import MapViewComponent from './Map';
 import reportWebVitals from './reportWebVitals';
+import MapViewComponent_Ram from './ram_test';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <MapViewComponent />
   </React.StrictMode>
 );
 
