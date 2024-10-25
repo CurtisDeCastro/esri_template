@@ -1,25 +1,23 @@
 import React, { useEffect } from 'react';
-import { 
-  loadModules
- } from 'esri-loader';
+import { loadModules } from 'esri-loader';
 import '@arcgis/core/assets/esri/themes/light/main.css';
 import {
-    client,
-    useConfig,
-    useElementColumns,
-    useElementData,
-  } from "@sigmacomputing/plugin";
+  client,
+  useConfig,
+  useElementData,
+} from "@sigmacomputing/plugin";
 
 import './index.css';
-  
-  client.config.configureEditorPanel([
-    { name: "source", type: "element" },
-    { name: "Center", type: "column", source: "source", allowMultiple: false},
-    { name: "Layers", type: "column", source: "source", allowMultiple: false}
-  ]);
+
+// Configure the editor panel with source, center, and layers options
+client.config.configureEditorPanel([
+  { name: "source", type: "element" },
+  { name: "Center", type: "column", source: "source", allowMultiple: false },
+  { name: "Layers", type: "column", source: "source", allowMultiple: false }
+]);
 
 const MapViewComponent = () => {
-
+  // Retrieve configuration and data from Sigma
   const config = useConfig();
   const sigmaData = useElementData(config.source);
 
@@ -27,99 +25,60 @@ const MapViewComponent = () => {
     let view;
 
     const loadMap = async () => {
-
-      // Load ArcGIS modules
+      // Load necessary ArcGIS modules
       const [Map, MapView, FeatureLayer] = await loadModules(['esri/Map', 'esri/views/MapView', 'esri/layers/FeatureLayer']);
 
-      const centerValue = sigmaData[config.Center] ? sigmaData[config.Center][0] : 0;
-      const centerActual = centerValue.toString().split(",");
-      console.log(centerActual);
-    
-      const centerLat = parseFloat(centerActual[0]);
-      const centerLong = parseFloat(centerActual[1]);
-    
-      console.log(centerLat);
-      console.log(centerLong);
+      // Extract and parse center coordinates from Sigma data
+      const centerValue = sigmaData[config.Center] ? sigmaData[config.Center][0] : "0,0";
+      const [centerLat, centerLong] = centerValue.split(",").map(coord => parseFloat(coord));
 
-      const layerValue = sigmaData[config.Layers] ? sigmaData[config.Layers][0] : 0;
+      // Extract layer URL from Sigma data
+      const layerValue = sigmaData[config.Layers] ? sigmaData[config.Layers][0] : null;
 
-     // const transportationLayer = new FeatureLayer({
-      //     url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/ACS_Median_Income_by_Race_and_Age_Selp_Emp_Boundaries/FeatureServer" 
-        // url: "https://server.arcgisonline.com/arcgis/rest/services/Reference/World_Transportation/MapServer",
-        //id: "streets",
-        //opacity: 0.7
-    //  });
-    
-      const housingLayer = new FeatureLayer({
-        url: !!layerValue ? layerValue: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/ACS_Median_Income_by_Race_and_Age_Selp_Emp_Boundaries/FeatureServer/1"
-        //id: "ny-housing"
+      // Create a feature layer with the provided URL or a default one
+      const featureLayer = new FeatureLayer({
+        url: layerValue || "https://services.arcgis.com/{yourOrgId}/arcgis/rest/services/Your_Service_Name/FeatureServer/1"
       });
-    
 
-      //Create a map
+      // Create a map with a specified basemap
       const map = new Map({
         basemap: 'streets-night-vector'
-      //  layers: [transportationLayer]
       });
 
-      // Create a MapView
+      // Initialize the MapView with the map and center coordinates
       view = new MapView({
-        container: 'viewDiv', // Reference to the view div created in step 5
-        map, // Reference to the map object created before the view
-        zoom: 7, // Sets zoom level based on level of detail (LOD)
-        center: [centerLong, centerLat] // Sets center point of view using longitude,latitude
+        container: 'viewDiv',
+        map,
+        zoom: 7,
+        center: [centerLong, centerLat]
       });
 
-     // map.add(transportationLayer);
-
-    // map.add(housingLayer);
-
-      //housingLayer.when(() => {
-      //   view.goTo(housingLayer.fullExtent);
-      // });
-
-      // const streetsLayerToggle = document.getElementById("streetsLayer");
-
-      // // Listen to the change event for the checkbox
-      // streetsLayerToggle.addEventListener("change", () => {
-      //   // When the checkbox is checked (true), set the layer's visibility to true
-      // transportationLayer.visible = streetsLayerToggle.checked;
-      // });
-
-      const housingLayerToggle = document.getElementById("housingLayer");
-
-      // Listen to the change event for the checkbox
-      housingLayerToggle.addEventListener("change", () => {
-        // When the checkbox is checked (true), set the layer's visibility to true
-      map.add(housingLayer);
-      housingLayer.visible = housingLayerToggle.checked;
+      // Add event listener to toggle feature layer visibility
+      const featureLayerToggle = document.getElementById("featureLayer");
+      featureLayerToggle.addEventListener("change", () => {
+        map.add(featureLayer);
+        featureLayer.visible = featureLayerToggle.checked;
       });
-
     };
-
 
     loadMap();
 
-    return function cleanup() {
-             if (view) {
-               view.destroy();
-             }
-           };
-         }, [config, sigmaData]);
+    // Cleanup function to destroy the view on component unmount
+    return () => {
+      if (view) {
+        view.destroy();
+      }
+    };
+  }, [config, sigmaData]);
 
   return (
-  
-  <div id="viewDiv" style={{ height: '100vh', width: '100%' }} > 
-  
-    <div className='checkboxContainer'>
-     {/* <span id="layerToggle" className="esri-widget"> 
-      <input type="checkbox" id="streetsLayer" /> Transportation </span> */}
-    <span id="layerToggle" className="esri-widget"> 
-       <input type="checkbox" id="housingLayer" /> Show Layer
+    <div id="viewDiv" style={{ height: '100vh', width: '100%' }}>
+      <div className='checkboxContainer'>
+        <span id="layerToggle" className="esri-widget">
+          <input type="checkbox" id="featureLayer" /> Show Layer
         </span>
-  </div> 
- 
-  </div>
+      </div>
+    </div>
   );
 };
 
